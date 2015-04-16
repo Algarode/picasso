@@ -24,6 +24,7 @@ import android.net.Uri;
 import android.widget.ImageView;
 import android.widget.RemoteViews;
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.TestOnly;
 
@@ -243,8 +244,8 @@ public class RequestCreator {
    * specified by {@link #resize(int, int)}.
    */
   public RequestCreator onlyScaleDown() {
-      data.onlyScaleDown();
-      return this;
+    data.onlyScaleDown();
+    return this;
   }
 
   /** Rotate the image by the specified degrees. */
@@ -299,6 +300,16 @@ public class RequestCreator {
   // TODO show example of calling resize after a transform in the javadoc
   public RequestCreator transform(Transformation transformation) {
     data.transform(transformation);
+    return this;
+  }
+
+  /**
+   * Add a list of custom transformations to be applied to the image.
+   * <p>
+   * Custom transformations will always be run after the built-in transformations.
+   */
+  public RequestCreator transform(List<? extends Transformation> transformations) {
+    data.transform(transformations);
     return this;
   }
 
@@ -523,6 +534,15 @@ public class RequestCreator {
    */
   public void into(RemoteViews remoteViews, int viewId, int notificationId,
       Notification notification) {
+    into(remoteViews, viewId, notificationId, notification, null);
+  }
+
+  /**
+   * Asynchronously fulfills the request into the specified {@link RemoteViews} object with the
+   * given {@code viewId}. This is used for loading bitmaps into a {@link Notification}.
+   */
+  public void into(RemoteViews remoteViews, int viewId, int notificationId,
+      Notification notification, String notificationTag) {
     long started = System.nanoTime();
 
     if (remoteViews == null) {
@@ -544,7 +564,7 @@ public class RequestCreator {
 
     RemoteViewsAction action =
         new NotificationAction(picasso, request, remoteViews, viewId, notificationId, notification,
-            memoryPolicy, networkPolicy, key, tag, errorResId);
+            notificationTag, memoryPolicy, networkPolicy, key, tag, errorResId);
 
     performRemoteViewInto(action);
   }

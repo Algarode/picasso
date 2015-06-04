@@ -366,6 +366,17 @@ public class RequestCreator {
     return this;
   }
 
+  /** Set inPurgeable and inInputShareable when decoding. This will force the bitmap to be decoded
+   * from a byte array instead of a stream, since inPurgeable only affects the former.
+   * <p>
+   * <em>Note</em>: as of API level 21 (Lollipop), the inPurgeable field is deprecated and will be
+   * ignored.
+   */
+  public RequestCreator purgeable() {
+    data.purgeable();
+    return this;
+  }
+
   /** Disable brief fade in of images loaded from the disk cache or network. */
   public RequestCreator noFade() {
     noFade = true;
@@ -429,20 +440,23 @@ public class RequestCreator {
 
       Request request = createRequest(started);
       String key = createKey(request, new StringBuilder());
-      Bitmap bitmap = picasso.quickMemoryCacheCheck(key);
 
-      if (bitmap != null) {
-        if (picasso.loggingEnabled) {
-          log(OWNER_MAIN, VERB_COMPLETED, request.plainId(), "from " + MEMORY);
+      if (shouldReadFromMemoryCache(memoryPolicy)) {
+        Bitmap bitmap = picasso.quickMemoryCacheCheck(key);
+        if (bitmap != null) {
+          if (picasso.loggingEnabled) {
+            log(OWNER_MAIN, VERB_COMPLETED, request.plainId(), "from " + MEMORY);
+          }
+          if (callback != null) {
+            callback.onSuccess();
+          }
+          return;
         }
-        if (callback != null) {
-          callback.onSuccess();
-        }
-      } else {
-        Action action =
-            new FetchAction(picasso, request, memoryPolicy, networkPolicy, tag, key, callback);
-        picasso.submit(action);
       }
+
+      Action action =
+          new FetchAction(picasso, request, memoryPolicy, networkPolicy, tag, key, callback);
+      picasso.submit(action);
     }
   }
 
